@@ -119,6 +119,51 @@ NavMeshSettings:
     debug:
       m_Flags: 0
   m_NavMeshData: {fileID: 0}
+--- !u!1 &4385424
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 4385426}
+  - component: {fileID: 4385427}
+  m_Layer: 0
+  m_Name: LegTrackingTester
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &4385426
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4385424}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &4385427
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4385424}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d0c0418105e5600448f48bd817f4d5c1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  bodySourceView: {fileID: 2006585376}
 --- !u!1 &785157136
 GameObject:
   m_ObjectHideFlags: 0
@@ -381,8 +426,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8821130411451d343a1488e2a9db134e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  BoneMaterial: {fileID: 2100000, guid: f2ea145c63353784985576f08398a815, type: 2}
   BodySourceManager: {fileID: 785157136}
+  JointPrefab: {fileID: 7630258924800698777, guid: 5fcc767018c05be49b93c04948bf0ce1, type: 3}
 --- !u!4 &2006585377
 Transform:
   m_ObjectHideFlags: 0
@@ -406,3 +451,4 @@ SceneRoots:
   - {fileID: 1561101697}
   - {fileID: 785157138}
   - {fileID: 2006585377}
+  - {fileID: 4385426}

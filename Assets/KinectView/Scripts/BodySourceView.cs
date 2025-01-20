@@ -1,162 +1,146 @@
 ﻿using UnityEngine;
-using System.Collections;
 using System.Collections.Generic;
 using Kinect = Windows.Kinect;
 
-public class BodySourceView : MonoBehaviour 
+public class BodySourceView : MonoBehaviour
 {
-    public Material BoneMaterial; // Material for leg bones visualization
-    public GameObject BodySourceManager; // Reference to the BodySourceManager script
+    public GameObject BodySourceManager;
 
-    private Dictionary<ulong, GameObject> _Bodies = new Dictionary<ulong, GameObject>();
+    // Prefab for visualizing joints
+    public GameObject JointPrefab;
+
+    private Dictionary<ulong, GameObject> _BodyObjects = new Dictionary<ulong, GameObject>(); // For visualizing joints
+    private Dictionary<ulong, LegTrackingData> _LegData = new Dictionary<ulong, LegTrackingData>(); // For storing leg tracking data
     private BodySourceManager _BodyManager;
 
-    // Mapping of leg joints (bones connecting leg joints)
-    private Dictionary<Kinect.JointType, Kinect.JointType> _LegBoneMap = new Dictionary<Kinect.JointType, Kinect.JointType>()
-    {
-        { Kinect.JointType.FootLeft, Kinect.JointType.AnkleLeft },
-        { Kinect.JointType.AnkleLeft, Kinect.JointType.KneeLeft },
-        { Kinect.JointType.KneeLeft, Kinect.JointType.HipLeft },
-        { Kinect.JointType.FootRight, Kinect.JointType.AnkleRight },
-        { Kinect.JointType.AnkleRight, Kinect.JointType.KneeRight },
-        { Kinect.JointType.KneeRight, Kinect.JointType.HipRight },
-    };
-
-    void Update() 
+    void Update()
     {
         if (BodySourceManager == null)
         {
             return;
         }
-        
+
         _BodyManager = BodySourceManager.GetComponent<BodySourceManager>();
         if (_BodyManager == null)
         {
             return;
         }
-        
+
         Kinect.Body[] data = _BodyManager.GetData();
         if (data == null)
         {
             return;
         }
-        
+
         List<ulong> trackedIds = new List<ulong>();
-        foreach(var body in data)
-        {
-            if (body == null)
-            {
-                continue;
-            }
-
-            if (body.IsTracked)
-            {
-                trackedIds.Add(body.TrackingId);
-            }
-        }
-        
-        List<ulong> knownIds = new List<ulong>(_Bodies.Keys);
-
-        // Remove untracked bodies
-        foreach (ulong trackingId in knownIds)
-        {
-            if (!trackedIds.Contains(trackingId))
-            {
-                Destroy(_Bodies[trackingId]);
-                _Bodies.Remove(trackingId);
-            }
-        }
-
-        // Process tracked bodies
         foreach (var body in data)
         {
             if (body == null || !body.IsTracked)
             {
                 continue;
             }
-            
-            if (!_Bodies.ContainsKey(body.TrackingId))
+
+            trackedIds.Add(body.TrackingId);
+
+            // Create visual objects for new bodies
+            if (!_BodyObjects.ContainsKey(body.TrackingId))
             {
-                _Bodies[body.TrackingId] = CreateLegsBodyObject(body.TrackingId);
+                _BodyObjects[body.TrackingId] = CreateBodyObject(body.TrackingId);
+                _LegData[body.TrackingId] = new LegTrackingData();
             }
-            
-            RefreshLegsBodyObject(body, _Bodies[body.TrackingId]);
+
+            // Update leg tracking data
+            _LegData[body.TrackingId].UpdateLegData(body);
+
+            // Update visual objects for the body
+            RefreshBodyObject(body, _BodyObjects[body.TrackingId]);
+        }
+
+        // Remove untracked bodies
+        List<ulong> knownIds = new List<ulong>(_BodyObjects.Keys);
+        foreach (ulong trackingId in knownIds)
+        {
+            if (!trackedIds.Contains(trackingId))
+            {
+                Destroy(_BodyObjects[trackingId]); // Destroy visual objects
+                _BodyObjects.Remove(trackingId);
+                _LegData.Remove(trackingId); // Remove leg data
+            }
         }
     }
-    
-    // Create a body object for legs visualization
-    private GameObject CreateLegsBodyObject(ulong id)
+
+    private GameObject CreateBodyObject(ulong id)
     {
-        GameObject body = new GameObject("LegsBody:" + id);
-        
-        foreach (Kinect.JointType jt in _LegBoneMap.Keys)
+        GameObject body = new GameObject("Body:" + id);
+
+        // Create joints for legs only
+        foreach (Kinect.JointType jt in new Kinect.JointType[]
         {
-            GameObject jointObj = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-            
-            LineRenderer lr = jointObj.AddComponent<LineRenderer>();
-            lr.positionCount = 2;
-            lr.material = BoneMaterial;
-            lr.startWidth = 0.05f;
-            lr.endWidth = 0.05f;
-            
-            jointObj.transform.localScale = new Vector3(0.2f, 0.2f, 0.2f);
+            Kinect.JointType.HipLeft,
+            Kinect.JointType.KneeLeft,
+            Kinect.JointType.AnkleLeft,
+            Kinect.JointType.FootLeft,
+            Kinect.JointType.HipRight,
+            Kinect.JointType.KneeRight,
+            Kinect.JointType.AnkleRight,
+            Kinect.JointType.FootRight
+        })
+        {
+            GameObject jointObj = Instantiate(JointPrefab);
             jointObj.name = jt.ToString();
             jointObj.transform.parent = body.transform;
         }
-        
+
         return body;
     }
-    
-    // Refresh leg data in the body object
-    private void RefreshLegsBodyObject(Kinect.Body body, GameObject bodyObject)
+
+    private void RefreshBodyObject(Kinect.Body body, GameObject bodyObject)
     {
-        foreach (var bone in _LegBoneMap)
+        foreach (Kinect.JointType jt in new Kinect.JointType[]
         {
-            Kinect.JointType sourceJoint = bone.Key;
-            Kinect.JointType targetJoint = bone.Value;
+            Kinect.JointType.HipLeft,
+            Kinect.JointType.KneeLeft,
+            Kinect.JointType.AnkleLeft,
+            Kinect.JointType.FootLeft,
+            Kinect.JointType.HipRight,
+            Kinect.JointType.KneeRight,
+            Kinect.JointType.AnkleRight,
+            Kinect.JointType.FootRight
+        })
+        {
+            Kinect.Joint joint = body.Joints[jt];
+            Transform jointObj = bodyObject.transform.Find(jt.ToString());
 
-            Kinect.Joint source = body.Joints[sourceJoint];
-            Kinect.Joint target = body.Joints[targetJoint];
-
-            Transform jointObj = bodyObject.transform.Find(sourceJoint.ToString());
-            jointObj.localPosition = GetVector3FromJoint(source);
-
-            LineRenderer lr = jointObj.GetComponent<LineRenderer>();
-            if (source.TrackingState != Kinect.TrackingState.NotTracked &&
-                target.TrackingState != Kinect.TrackingState.NotTracked)
+            if (joint.TrackingState == Kinect.TrackingState.Tracked)
             {
-                lr.enabled = true;
-                lr.SetPosition(0, jointObj.localPosition);
-                lr.SetPosition(1, GetVector3FromJoint(target));
-                lr.startColor = GetColorForState(source.TrackingState);
-                lr.endColor = GetColorForState(target.TrackingState);
+                jointObj.gameObject.SetActive(true);
+                jointObj.position = GetVector3FromJoint(joint); // Update joint position
             }
             else
             {
-                lr.enabled = false;
+                jointObj.gameObject.SetActive(false); // Hide joint if not tracked
             }
         }
     }
 
-    // Get the appropriate color based on the joint's tracking state
-    private static Color GetColorForState(Kinect.TrackingState state)
-    {
-        switch (state)
-        {
-            case Kinect.TrackingState.Tracked:
-                return Color.green;
-
-            case Kinect.TrackingState.Inferred:
-                return Color.red;
-
-            default:
-                return Color.black;
-        }
-    }
-    
-    // Convert Kinect joint position to Unity world space
-    private static Vector3 GetVector3FromJoint(Kinect.Joint joint)
+    private Vector3 GetVector3FromJoint(Kinect.Joint joint)
     {
         return new Vector3(joint.Position.X * 10, joint.Position.Y * 10, joint.Position.Z * 10);
+    }
+
+    // Public method to get leg tracking data
+    public LegTrackingData GetLegData(ulong trackingId)
+    {
+        if (_LegData.ContainsKey(trackingId))
+        {
+            return _LegData[trackingId];
+        }
+        return null; // No data found for this tracking ID
+    }
+
+    // Public method to get all tracked IDs
+    public List<ulong> GetTrackedIds()
+    {
+        return new List<ulong>(_LegData.Keys);
     }
 }
