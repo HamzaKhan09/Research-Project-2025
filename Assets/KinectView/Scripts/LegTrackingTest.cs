@@ -18,6 +18,8 @@ public class LegTrackingTest : MonoBehaviour
             if (legData != null)
             {
                 Debug.Log("Left Knee Position: " + legData.LeftKnee);
+                Debug.Log("Right Knee Position: " + legData.RightKnee);
+                Debug.Log("Left Foot Position: " + legData.LeftFoot);
                 Debug.Log("Right Foot Position: " + legData.RightFoot);
             }
         }
