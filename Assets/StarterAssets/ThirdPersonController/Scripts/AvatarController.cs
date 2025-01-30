@@ -1,14 +1,13 @@
 using UnityEngine;
-using Kinect = Windows.Kinect; // Requires Kinect SDK 2.0
+using Kinect = Windows.Kinect; // Kinect namespace
 
 public class AvatarController : MonoBehaviour
 {
-    public BodySourceManager BodySourceManager; // Assign your BodySourceManager GameObject in the Inspector
+    public BodySourceManager BodySourceManager; // Assign in Inspector
     private Kinect.Body trackedBody;
-
     private Animator animator;
 
-    // Bone references for the avatar
+    // Leg bone references
     private Transform leftUpperLeg, leftLowerLeg, leftFoot;
     private Transform rightUpperLeg, rightLowerLeg, rightFoot;
 
@@ -16,7 +15,7 @@ public class AvatarController : MonoBehaviour
     {
         animator = GetComponent<Animator>();
 
-        // Map the avatar's humanoid bones
+        // Get the humanoid bone transforms
         leftUpperLeg = animator.GetBoneTransform(HumanBodyBones.LeftUpperLeg);
         leftLowerLeg = animator.GetBoneTransform(HumanBodyBones.LeftLowerLeg);
         leftFoot = animator.GetBoneTransform(HumanBodyBones.LeftFoot);
@@ -30,7 +29,7 @@ public class AvatarController : MonoBehaviour
     {
         if (BodySourceManager == null) return;
 
-        Kinect.Body[] data = BodySourceManager.GetData();
+        Windows.Kinect.Body[] data = BodySourceManager.GetData();
         if (data == null) return;
 
         // Find the first tracked body
@@ -45,32 +44,70 @@ public class AvatarController : MonoBehaviour
 
         if (trackedBody != null)
         {
-            MapLegJoints();
+            AlignAvatarWithKinect(); // Align avatar with user position
+            MapLegJoints();          // Map Kinect data to avatar legs
         }
     }
 
-    private void MapLegJoints()
+    /// <summary>
+    /// Align the avatar’s root position with the Kinect-tracked SpineBase
+    /// </summary>
+    private void AlignAvatarWithKinect()
     {
-        // Map Kinect joints to the avatar's leg bones
-        Vector3 hipLeft = ConvertKinectToUnity(trackedBody.Joints[Kinect.JointType.HipLeft]);
-        Vector3 kneeLeft = ConvertKinectToUnity(trackedBody.Joints[Kinect.JointType.KneeLeft]);
-        Vector3 ankleLeft = ConvertKinectToUnity(trackedBody.Joints[Kinect.JointType.AnkleLeft]);
-
-        Vector3 hipRight = ConvertKinectToUnity(trackedBody.Joints[Kinect.JointType.HipRight]);
-        Vector3 kneeRight = ConvertKinectToUnity(trackedBody.Joints[Kinect.JointType.KneeRight]);
-        Vector3 ankleRight = ConvertKinectToUnity(trackedBody.Joints[Kinect.JointType.AnkleRight]);
-
-        leftUpperLeg.position = hipLeft;
-        leftLowerLeg.position = kneeLeft;
-        leftFoot.position = ankleLeft;
-
-        rightUpperLeg.position = hipRight;
-        rightLowerLeg.position = kneeRight;
-        rightFoot.position = ankleRight;
+        Vector3 spineBase = ConvertKinectToUnity(trackedBody.Joints[Kinect.JointType.SpineBase]);
+        transform.position = spineBase; // Keep avatar positioned with user
     }
 
-    private Vector3 ConvertKinectToUnity(Kinect.Joint joint)
+    /// <summary>
+    /// Map Kinect leg joints to the avatar’s leg bones
+    /// </summary>
+private void MapLegJoints()
+{
+    float smoothFactor = 5f; // Adjust for smoother motion
+
+    // Get Kinect joint positions
+    Vector3 hipLeft = ConvertKinectToUnity(trackedBody.Joints[Windows.Kinect.JointType.HipLeft]);
+    Vector3 kneeLeft = ConvertKinectToUnity(trackedBody.Joints[Windows.Kinect.JointType.KneeLeft]);
+    Vector3 ankleLeft = ConvertKinectToUnity(trackedBody.Joints[Windows.Kinect.JointType.AnkleLeft]);
+
+    Vector3 hipRight = ConvertKinectToUnity(trackedBody.Joints[Windows.Kinect.JointType.HipRight]);
+    Vector3 kneeRight = ConvertKinectToUnity(trackedBody.Joints[Windows.Kinect.JointType.KneeRight]);
+    Vector3 ankleRight = ConvertKinectToUnity(trackedBody.Joints[Windows.Kinect.JointType.AnkleRight]);
+
+    // Smooth rotations for realistic leg movement
+    leftUpperLeg.rotation = Quaternion.Slerp(leftUpperLeg.rotation, GetKinectBoneRotation(hipLeft, kneeLeft), Time.deltaTime * smoothFactor);
+    leftLowerLeg.rotation = Quaternion.Slerp(leftLowerLeg.rotation, GetKinectBoneRotation(kneeLeft, ankleLeft), Time.deltaTime * smoothFactor);
+    leftFoot.rotation = Quaternion.Slerp(leftFoot.rotation, GetKinectBoneRotation(ankleLeft, ConvertKinectToUnity(trackedBody.Joints[Windows.Kinect.JointType.FootLeft])), Time.deltaTime * smoothFactor);
+
+    rightUpperLeg.rotation = Quaternion.Slerp(rightUpperLeg.rotation, GetKinectBoneRotation(hipRight, kneeRight), Time.deltaTime * smoothFactor);
+    rightLowerLeg.rotation = Quaternion.Slerp(rightLowerLeg.rotation, GetKinectBoneRotation(kneeRight, ankleRight), Time.deltaTime * smoothFactor);
+    rightFoot.rotation = Quaternion.Slerp(rightFoot.rotation, GetKinectBoneRotation(ankleRight, ConvertKinectToUnity(trackedBody.Joints[Windows.Kinect.JointType.FootRight])), Time.deltaTime * smoothFactor);
+}
+
+
+    /// <summary>
+    /// Compute the rotation of a bone based on the direction between two Kinect joints
+    /// </summary>
+    private Quaternion GetKinectBoneRotation(Vector3 start, Vector3 end)
+{
+    Vector3 direction = (end - start).normalized;
+
+    // Prevent zero vector errors
+    if (direction == Vector3.zero)
     {
-        return new Vector3(joint.Position.X, joint.Position.Y, -joint.Position.Z) * 10; // Scale as needed
+        return Quaternion.identity;
+    }
+
+    return Quaternion.LookRotation(direction, Vector3.up);
+}
+
+
+    /// <summary>
+    /// Convert Kinect joint coordinates to Unity's coordinate system
+    /// </summary>
+    private Vector3 ConvertKinectToUnity(Windows.Kinect.Joint joint)
+    {
+        float scaleFactor = 2.0f; // Adjust as needed
+        return new Vector3(joint.Position.X, joint.Position.Y, -joint.Position.Z) * scaleFactor;
     }
 }
