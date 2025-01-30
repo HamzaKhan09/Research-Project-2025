@@ -58,7 +58,7 @@ public class AvatarController : MonoBehaviour
         transform.position = spineBase; // Keep avatar positioned with user
     }
 
-    /// <summary>
+
     /// Map Kinect leg joints to the avatar’s leg bones
     /// </summary>
 private void MapLegJoints()
