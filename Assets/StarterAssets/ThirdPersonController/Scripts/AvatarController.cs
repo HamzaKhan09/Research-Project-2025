@@ -31,8 +31,8 @@ void Start()
     rightFoot = animator.GetBoneTransform(HumanBodyBones.RightFoot);
 
     // Set a default position to avoid floating at start
-    transform.position = new Vector3(0, 0, 2f); // Start slightly in front of Kinect
-    transform.rotation = Quaternion.Euler(0, 180, 0); // Ensure correct facing direction
+    //transform.position = new Vector3(0, 0, 2f); // Start slightly in front of Kinect
+    //transform.rotation = Quaternion.Euler(0, 180, 0); // Ensure correct facing direction
 }
 
 
@@ -98,7 +98,7 @@ private void AlignAvatarWithKinect()
     transform.rotation *= Quaternion.Euler(0, -90, 0);
 
     // Right Leg Position
-    rightUpperLeg.position = new Vector3(rightUpperLeg.position.x, 0.9f, rightUpperLeg.position.z); // Force leg lower
+    //rightUpperLeg.position = new Vector3(rightUpperLeg.position.x, 0.9f, rightUpperLeg.position.z); // Force leg lower
 }
 
 
