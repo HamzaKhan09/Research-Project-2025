@@ -158,7 +158,8 @@ private Quaternion GetKinectBoneRotation(Windows.Kinect.JointType startJoint, Wi
     }
 
     lastKnownRotations[startJoint] = newRotation;
-    return newRotation;
+    return lastKnownRotations[startJoint];
+
 }
 
 
