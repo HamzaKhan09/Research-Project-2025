@@ -163,7 +163,6 @@ private Quaternion GetKinectBoneRotation(Windows.Kinect.JointType startJoint, Wi
 }
 
 
-
 private Vector3 ConvertKinectToUnity(Windows.Kinect.Joint joint)
 {
     float scaleFactor = 1.0f;
@@ -171,10 +170,5 @@ private Vector3 ConvertKinectToUnity(Windows.Kinect.Joint joint)
     // Flip Z-axis for depth correction
     return new Vector3(joint.Position.X, joint.Position.Y*scaleFactor, -joint.Position.Z);
 }
-
-
-
-
-
 
 }
