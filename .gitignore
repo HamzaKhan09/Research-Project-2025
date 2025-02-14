@@ -8,6 +8,10 @@
 /[Ll]ogs/
 /[Uu]ser[Ss]ettings/
 
+!ProjectSettings/
+!Packages/
+
+
 /[Mm]emoryCaptures/
 
 # Recordings can get excessive in size
