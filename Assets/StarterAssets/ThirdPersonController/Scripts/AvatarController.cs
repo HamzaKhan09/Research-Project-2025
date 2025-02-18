@@ -17,7 +17,8 @@ public class AvatarController : MonoBehaviour
     private Transform leftUpperLeg, leftLowerLeg, leftFoot;
     private Transform rightUpperLeg, rightLowerLeg, rightFoot;
 
-void Start()
+
+    void Start()
 {
     animator = GetComponent<Animator>();
 
