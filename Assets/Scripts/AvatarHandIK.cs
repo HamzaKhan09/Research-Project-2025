@@ -3,109 +3,63 @@ using UnityEngine;
 public class AvatarHandIK : MonoBehaviour
 {
     public Animator animator; // Avatar's Animator
-       // VR Hand & Elbow Tracking
-    public Transform vrLeftHandTarget;
-    public Transform vrRightHandTarget;
-    public Transform vrLeftElbowTarget;
-    public Transform vrRightElbowTarget;
+    public Transform vrLeftHandTarget; // VR Left Hand Target
+    public Transform vrRightHandTarget; // VR Right Hand Target
 
-    // VR Head Tracking
+    public float ikWeight = 1.0f; // How strongly IK follows the target
     public Transform vrHeadTarget;
 
-    // VR Finger Tracking
-    public Transform vrLeftThumb;
-    public Transform vrLeftIndex;
-    public Transform vrLeftMiddle;
-    public Transform vrLeftRing;
-    public Transform vrLeftPinky;
-
-    public Transform vrRightThumb;
-    public Transform vrRightIndex;
-    public Transform vrRightMiddle;
-    public Transform vrRightRing;
-    public Transform vrRightPinky;
-    public float ikWeight = 1.0f; // How strongly IK follows the target
-
-    void OnAnimatorIK(int layerIndex)
+void OnAnimatorIK(int layerIndex)
+{
+    if (animator)
     {
-        if (animator)
+        // Get Avatar’s root position
+        Vector3 avatarPosition = transform.position;
+
+        // Apply IK to Left Hand (Fix Inverted Position)
+        if (vrLeftHandTarget != null)
         {
-            // Apply IK to Left Hand
-            if (vrLeftHandTarget != null)
-            {
-                animator.SetIKPositionWeight(AvatarIKGoal.LeftHand, ikWeight);
-                animator.SetIKRotationWeight(AvatarIKGoal.LeftHand, ikWeight);
+            animator.SetIKPositionWeight(AvatarIKGoal.LeftHand, 1.0f);
+            animator.SetIKRotationWeight(AvatarIKGoal.LeftHand, 1.0f);
 
-                // Rotate the left hand to face forward
-                Quaternion leftHandRotationFix = vrLeftHandTarget.rotation * Quaternion.Euler(0, 180, 0);
-                
-                Vector3 mirroredLeftPosition = vrLeftHandTarget.position;
-                mirroredLeftPosition.x = -mirroredLeftPosition.x; // Mirror X-axis
-                animator.SetIKPosition(AvatarIKGoal.LeftHand, mirroredLeftPosition);
+            // Mirror the X position & Flip Z to fix movement direction
+            Vector3 leftHandLocalOffset = vrLeftHandTarget.position - Camera.main.transform.position;
+            leftHandLocalOffset.x = -leftHandLocalOffset.x; // Fix Left-Right
+            leftHandLocalOffset.z = -leftHandLocalOffset.z; // Fix Forward-Backward
 
-                animator.SetIKRotation(AvatarIKGoal.LeftHand, leftHandRotationFix);
-            }
+            animator.SetIKPosition(AvatarIKGoal.LeftHand, avatarPosition + leftHandLocalOffset);
 
+            // Fix rotation so the palm faces correctly
+            Quaternion leftHandRotationFix = vrLeftHandTarget.rotation * Quaternion.Euler(0, 180, 180);
+            animator.SetIKRotation(AvatarIKGoal.LeftHand, leftHandRotationFix);
+        }
 
-             if (vrLeftElbowTarget != null)
-            {
-                animator.SetIKHintPositionWeight(AvatarIKHint.LeftElbow, ikWeight);
-                animator.SetIKHintPosition(AvatarIKHint.LeftElbow, vrLeftElbowTarget.position);
-            }
+        // Apply IK to Right Hand (Fix Inverted Position)
+        if (vrRightHandTarget != null)
+        {
+            animator.SetIKPositionWeight(AvatarIKGoal.RightHand, 1.0f);
+            animator.SetIKRotationWeight(AvatarIKGoal.RightHand, 1.0f);
 
+            // Mirror the X position & Flip Z to fix movement direction
+            Vector3 rightHandLocalOffset = vrRightHandTarget.position - Camera.main.transform.position;
+            rightHandLocalOffset.x = -rightHandLocalOffset.x; // Fix Left-Right
+            rightHandLocalOffset.z = -rightHandLocalOffset.z; // Fix Forward-Backward
 
-            // Apply IK to Right Hand
-            if (vrRightHandTarget != null)
-            {
-                animator.SetIKPositionWeight(AvatarIKGoal.RightHand, ikWeight);
-                animator.SetIKRotationWeight(AvatarIKGoal.RightHand, ikWeight);
+            animator.SetIKPosition(AvatarIKGoal.RightHand, avatarPosition + rightHandLocalOffset);
 
-                // Rotate the right hand to face forward
-                Quaternion rightHandRotationFix = vrRightHandTarget.rotation * Quaternion.Euler(0, 180, 0);
+            // Fix rotation so the palm faces correctly
+            Quaternion rightHandRotationFix = vrRightHandTarget.rotation * Quaternion.Euler(0, 180, 180);
+            animator.SetIKRotation(AvatarIKGoal.RightHand, rightHandRotationFix);
+        }
 
-                Vector3 mirroredRightPosition = vrRightHandTarget.position;
-                mirroredRightPosition.x = -mirroredRightPosition.x; // Mirror X-axis
-                animator.SetIKPosition(AvatarIKGoal.RightHand, mirroredRightPosition);
-
-                animator.SetIKRotation(AvatarIKGoal.RightHand, rightHandRotationFix);
-            }
-
-            if (vrRightElbowTarget != null)
-            {
-                animator.SetIKHintPositionWeight(AvatarIKHint.RightElbow, ikWeight);
-                animator.SetIKHintPosition(AvatarIKHint.RightElbow, vrRightElbowTarget.position);
-            }
-
-                        // Apply IK to Head
-            if (vrHeadTarget != null)
-            {
-                animator.SetLookAtWeight(ikWeight);
-                animator.SetLookAtPosition(vrHeadTarget.position);
-            }
-
-             if (vrLeftThumb != null)
-                animator.SetBoneLocalRotation(HumanBodyBones.LeftThumbProximal, vrLeftThumb.rotation);
-            if (vrLeftIndex != null)
-                animator.SetBoneLocalRotation(HumanBodyBones.LeftIndexProximal, vrLeftIndex.rotation);
-            if (vrLeftMiddle != null)
-                animator.SetBoneLocalRotation(HumanBodyBones.LeftMiddleProximal, vrLeftMiddle.rotation);
-            if (vrLeftRing != null)
-                animator.SetBoneLocalRotation(HumanBodyBones.LeftRingProximal, vrLeftRing.rotation);
-            if (vrLeftPinky != null)
-                animator.SetBoneLocalRotation(HumanBodyBones.LeftLittleProximal, vrLeftPinky.rotation);
-
-            // Apply Finger Tracking for Right Hand
-            if (vrRightThumb != null)
-                animator.SetBoneLocalRotation(HumanBodyBones.RightThumbProximal, vrRightThumb.rotation);
-            if (vrRightIndex != null)
-                animator.SetBoneLocalRotation(HumanBodyBones.RightIndexProximal, vrRightIndex.rotation);
-            if (vrRightMiddle != null)
-                animator.SetBoneLocalRotation(HumanBodyBones.RightMiddleProximal, vrRightMiddle.rotation);
-            if (vrRightRing != null)
-                animator.SetBoneLocalRotation(HumanBodyBones.RightRingProximal, vrRightRing.rotation);
-            if (vrRightPinky != null)
-                animator.SetBoneLocalRotation(HumanBodyBones.RightLittleProximal, vrRightPinky.rotation);
-
+        // Apply IK to Head (Track Head Movement)
+        if (vrHeadTarget != null)
+        {
+            animator.SetLookAtWeight(ikWeight);
+            animator.SetLookAtPosition(vrHeadTarget.position);
         }
     }
+}
+
+
 }
