@@ -9,6 +9,7 @@ public class AvatarController : MonoBehaviour
     private Kinect.Body trackedBody;
     private Animator animator;
     
+    private Kinect.Body body;
     // Store last known bone rotations when Kinect loses tracking
     private Dictionary<Windows.Kinect.JointType, Quaternion> lastKnownRotations = new Dictionary<Windows.Kinect.JointType, Quaternion>();
 
@@ -21,6 +22,13 @@ public class AvatarController : MonoBehaviour
     void Start()
 {
     animator = GetComponent<Animator>();
+    animator.applyRootMotion = false; // Allow external bone updates
+
+    if (animator == null)
+    {
+        Debug.LogError("Animator component is missing!");
+        return;
+    }
 
     // Initialize bone transforms
     leftUpperLeg = animator.GetBoneTransform(HumanBodyBones.LeftUpperLeg);
@@ -32,18 +40,38 @@ public class AvatarController : MonoBehaviour
     rightFoot = animator.GetBoneTransform(HumanBodyBones.RightFoot);
 
     // Set a default position to avoid floating at start
-    //transform.position = new Vector3(0, 0, 2f); // Start slightly in front of Kinect
+     transform.position = new Vector3(0, 0, 1f); // Start slightly in front of Kinect
     //transform.rotation = Quaternion.Euler(0, 180, 0); // Ensure correct facing direction
+    
+    if (leftUpperLeg == null) Debug.LogError("Left Upper Leg bone is null!");
+    if (rightUpperLeg == null) Debug.LogError("Right Upper Leg bone is null!");
+    if (rightFoot == null) Debug.LogError("Right foot bone is null!");
+    if (leftFoot == null) Debug.LogError("Left foot bone is null!");
+    if (leftLowerLeg == null) Debug.LogError("Left lower Leg bone is null!");
+    if (rightLowerLeg == null) Debug.LogError("Right lower Leg bone is null!");
+
 }
 
 
 
    void Update()
 {
-    if (BodySourceManager == null) return;
+
+    Debug.Log("AvatarController Update is running.");
+
+        if (BodySourceManager == null)
+    {
+        Debug.LogError("BodySourceManager is not assigned!");
+        return;
+    }
 
     Kinect.Body[] data = BodySourceManager.GetData();
-    if (data == null) return;
+
+    if (data == null)
+    {
+        Debug.LogWarning("No Kinect data received.");
+        return;
+    }
 
     foreach (var body in data)
     {
@@ -52,10 +80,11 @@ public class AvatarController : MonoBehaviour
             trackedBody = body;
             break;
         }
-    }
+        }
+    
 
-    if (trackedBody != null)
-    {
+        if (trackedBody != null)
+        {
         AlignAvatarWithKinect();
         MapJointsToAvatar();
 
@@ -63,8 +92,8 @@ public class AvatarController : MonoBehaviour
         Vector3 footLeft = ConvertKinectToUnity(trackedBody.Joints[Windows.Kinect.JointType.FootLeft]);
 
         Debug.Log($"FootRight Position: {footRight}");
-        Debug.Log($"Foot Right Position: {footLeft}");
-        
+        Debug.Log($"FootLeft Position: {footLeft}");
+
     }
 }
 
@@ -77,11 +106,6 @@ private void AlignAvatarWithKinect()
     Vector3 spineBase = ConvertKinectToUnity(trackedBody.Joints[Windows.Kinect.JointType.SpineBase]);
 
     spineBase.y = 0.0f;
-
-        if (trackedBody.Joints[Windows.Kinect.JointType.SpineBase].TrackingState == Windows.Kinect.TrackingState.NotTracked)
-    {
-        return; // Keeps the last valid position instead of snapping to a bad default
-    }
 
     Vector3 hipLeft = ConvertKinectToUnity(trackedBody.Joints[Windows.Kinect.JointType.HipLeft]);
     Vector3 hipRight = ConvertKinectToUnity(trackedBody.Joints[Windows.Kinect.JointType.HipRight]);
@@ -99,28 +123,40 @@ private void AlignAvatarWithKinect()
     transform.rotation *= Quaternion.Euler(0, -90, 0);
 
     // Right Leg Position
-    //rightUpperLeg.position = new Vector3(rightUpperLeg.position.x, 0.9f, rightUpperLeg.position.z); // Force leg lower
+    rightUpperLeg.position = new Vector3(rightUpperLeg.position.x, 0.9f, rightUpperLeg.position.z); // Force leg lower
 }
 
 
 
 private void MapJointsToAvatar()
 {
-    float smoothFactor = 5f; //smoother motion
+    //float smoothFactor = 5f; //smoother motion
 
     //Spine and Head
     //spine.rotation = Quaternion.Slerp(spine.rotation, GetKinectBoneRotation(Windows.Kinect.JointType.SpineMid, Windows.Kinect.JointType.Head), Time.deltaTime * smoothFactor);
     //head.rotation = Quaternion.Slerp(head.rotation, GetKinectBoneRotation(Windows.Kinect.JointType.Head, Windows.Kinect.JointType.SpineMid), Time.deltaTime * smoothFactor);
-
+    
     // Map Left Leg
-    leftUpperLeg.rotation = Quaternion.Slerp(leftUpperLeg.rotation, GetKinectBoneRotation(Windows.Kinect.JointType.HipLeft, Windows.Kinect.JointType.KneeLeft), Time.deltaTime * smoothFactor);
-    leftLowerLeg.rotation = Quaternion.Slerp(leftLowerLeg.rotation, GetKinectBoneRotation(Windows.Kinect.JointType.KneeLeft, Windows.Kinect.JointType.AnkleLeft), Time.deltaTime * smoothFactor);
-    leftFoot.rotation = Quaternion.Slerp(leftFoot.rotation, GetKinectBoneRotation(Windows.Kinect.JointType.AnkleLeft, Windows.Kinect.JointType.FootLeft), Time.deltaTime * smoothFactor);
+    leftUpperLeg.rotation = GetKinectBoneRotation(Windows.Kinect.JointType.HipLeft, Windows.Kinect.JointType.KneeLeft);
+    leftLowerLeg.rotation = GetKinectBoneRotation(Windows.Kinect.JointType.KneeLeft, Windows.Kinect.JointType.AnkleLeft);
+    leftFoot.rotation = GetKinectBoneRotation(Windows.Kinect.JointType.AnkleLeft, Windows.Kinect.JointType.FootLeft);
 
     // Map Right Leg
-    rightUpperLeg.rotation = Quaternion.Slerp(rightUpperLeg.rotation, GetKinectBoneRotation(Windows.Kinect.JointType.HipRight, Windows.Kinect.JointType.KneeRight), Time.deltaTime * smoothFactor);
-    rightLowerLeg.rotation = Quaternion.Slerp(rightLowerLeg.rotation, GetKinectBoneRotation(Windows.Kinect.JointType.KneeRight, Windows.Kinect.JointType.AnkleRight), Time.deltaTime * smoothFactor);
-    rightFoot.rotation = Quaternion.Slerp(rightFoot.rotation, GetKinectBoneRotation(Windows.Kinect.JointType.AnkleRight, Windows.Kinect.JointType.FootRight), Time.deltaTime * smoothFactor);
+    rightUpperLeg.rotation = GetKinectBoneRotation(Windows.Kinect.JointType.HipRight, Windows.Kinect.JointType.KneeRight);
+    rightLowerLeg.rotation = GetKinectBoneRotation(Windows.Kinect.JointType.KneeRight, Windows.Kinect.JointType.AnkleRight);
+    rightFoot.rotation = GetKinectBoneRotation(Windows.Kinect.JointType.AnkleRight, Windows.Kinect.JointType.FootRight);
+
+    Vector3 hipLeft = ConvertKinectToUnity(trackedBody.Joints[Kinect.JointType.HipLeft]);
+    Vector3 kneeLeft = ConvertKinectToUnity(trackedBody.Joints[Kinect.JointType.KneeLeft]);
+
+    Debug.DrawLine(hipLeft, kneeLeft, Color.red, 1.1f);
+    // Add a second line for visibility
+    Debug.DrawRay(hipLeft, Vector3.up * 0.5f, Color.green, 1.1f);
+
+    //animator.Update(0f);
+
+    Debug.Log("MJTA: Left Upper Leg Rotation: " + leftUpperLeg.rotation);
+    Debug.Log("MJTA: Right Upper Leg Rotation: " + rightUpperLeg.rotation);
 }
 
 
@@ -128,24 +164,25 @@ private void MapJointsToAvatar()
 
 private Quaternion GetKinectBoneRotation(Windows.Kinect.JointType startJoint, Windows.Kinect.JointType endJoint)
 {
-    if (trackedBody.Joints[startJoint].TrackingState == Windows.Kinect.TrackingState.NotTracked ||
-        trackedBody.Joints[endJoint].TrackingState == Windows.Kinect.TrackingState.NotTracked)
+    if (trackedBody.Joints[startJoint].TrackingState == Kinect.TrackingState.NotTracked ||
+        trackedBody.Joints[endJoint].TrackingState == Kinect.TrackingState.NotTracked)
     {
-        return lastKnownRotations.ContainsKey(startJoint) ? lastKnownRotations[startJoint] : Quaternion.identity;
+        return Quaternion.identity;
     }
 
     Vector3 start = ConvertKinectToUnity(trackedBody.Joints[startJoint]);
     Vector3 end = ConvertKinectToUnity(trackedBody.Joints[endJoint]);
 
     Vector3 direction = (end - start).normalized;
-    if (direction == Vector3.zero) return Quaternion.identity;
+
+    //if (direction == Vector3.zero) return Quaternion.identity;
 
     Quaternion newRotation = Quaternion.LookRotation(direction, Vector3.up);
 
-    // Right Foot Flipping Issue**
+     // Right Foot Flipping Issue**
     if (startJoint == Windows.Kinect.JointType.AnkleLeft)
     {
-        newRotation *= Quaternion.Euler(0, 180, 0); // Inverts right foot correctly
+        newRotation *= Quaternion.Euler(0, 180, 180); // Inverts  left foot correctly
     }
 
     // Apply different rotation fixes for each leg
@@ -159,17 +196,52 @@ private Quaternion GetKinectBoneRotation(Windows.Kinect.JointType startJoint, Wi
     }
 
     lastKnownRotations[startJoint] = newRotation;
-    return lastKnownRotations[startJoint];
-
+    return newRotation;
+    
 }
 
 
 private Vector3 ConvertKinectToUnity(Windows.Kinect.Joint joint)
 {
-    float scaleFactor = 1.0f;
-
-    // Flip Z-axis for depth correction
-    return new Vector3(joint.Position.X, joint.Position.Y*scaleFactor, -joint.Position.Z);
+    // Example adjustment for proper scaling/alignment
+    return new Vector3(
+        joint.Position.X * 2f, 
+        joint.Position.Y * 2f, 
+        -joint.Position.Z * 2f // Flip Z-axis
+    );
 }
+
+/* private Vector3 ConvertKinectToUnity(Windows.Kinect.Joint joint)
+{
+    if (joint == null)
+    {
+        Debug.LogError("CKTU: Joint is null.");
+        return Vector3.zero;
+    }
+
+    Debug.Log($"Joint Tracking State: {joint.TrackingState}");
+
+    if (joint.TrackingState == Kinect.TrackingState.NotTracked)
+    {
+        Debug.Log("CKTU: Joints not tracked.");
+        return Vector3.zero;
+    }
+
+    // Debug log for Kinect space position
+    Debug.Log($"Joint Position (Kinect Space): X={joint.Position.X}, Y={joint.Position.Y}, Z={joint.Position.Z}");
+
+    // Kinect to Unity coordinate conversion
+    Vector3 position = new Vector3(joint.Position.X * 15f,joint.Position.Y * 15f,-joint.Position.Z * 15f);
+
+    // Debug log for Unity space position
+    Debug.Log($"Converted Position (Unity Space): {position}");
+
+    // Draw larger, more visible lines
+    Debug.DrawRay(position, Vector3.up * 2f, Color.green, 0.1f);
+    Debug.DrawRay(position, Vector3.forward * 2f, Color.blue, 0.1f);
+
+    return position;
+}
+ */    
 
 }

@@ -24,10 +24,13 @@ public class LegTrackingData
         RightKnee = GetVector3FromJoint(body.Joints[Kinect.JointType.KneeRight]);
         RightAnkle = GetVector3FromJoint(body.Joints[Kinect.JointType.AnkleRight]);
         RightFoot = GetVector3FromJoint(body.Joints[Kinect.JointType.FootRight]);
+
+        Debug.Log($"Left Hip: {LeftHip}");
+        Debug.Log($"Right Knee: {RightKnee}");
     }
 
     private Vector3 GetVector3FromJoint(Kinect.Joint joint)
     {
-        return new Vector3(joint.Position.X * 10, joint.Position.Y * 10, joint.Position.Z * 10);
+        return new Vector3(joint.Position.X *2, joint.Position.Y * 2, -joint.Position.Z * 2);
     }
 }

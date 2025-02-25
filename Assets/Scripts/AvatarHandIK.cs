@@ -23,14 +23,14 @@ void OnAnimatorIK(int layerIndex)
             animator.SetIKRotationWeight(AvatarIKGoal.LeftHand, 1.0f);
 
             // Mirror the X position & Flip Z to fix movement direction
-            Vector3 leftHandLocalOffset = vrLeftHandTarget.position - Camera.main.transform.position;
+            Vector3 leftHandLocalOffset = vrLeftHandTarget.position;
             leftHandLocalOffset.x = -leftHandLocalOffset.x; // Fix Left-Right
             leftHandLocalOffset.z = -leftHandLocalOffset.z; // Fix Forward-Backward
 
             animator.SetIKPosition(AvatarIKGoal.LeftHand, avatarPosition + leftHandLocalOffset);
 
             // Fix rotation so the palm faces correctly
-            Quaternion leftHandRotationFix = vrLeftHandTarget.rotation * Quaternion.Euler(0, 180, 180);
+            Quaternion leftHandRotationFix = vrLeftHandTarget.rotation * Quaternion.Euler(0, 180, 0);
             animator.SetIKRotation(AvatarIKGoal.LeftHand, leftHandRotationFix);
         }
 
@@ -41,14 +41,14 @@ void OnAnimatorIK(int layerIndex)
             animator.SetIKRotationWeight(AvatarIKGoal.RightHand, 1.0f);
 
             // Mirror the X position & Flip Z to fix movement direction
-            Vector3 rightHandLocalOffset = vrRightHandTarget.position - Camera.main.transform.position;
+            Vector3 rightHandLocalOffset = vrRightHandTarget.position;
             rightHandLocalOffset.x = -rightHandLocalOffset.x; // Fix Left-Right
             rightHandLocalOffset.z = -rightHandLocalOffset.z; // Fix Forward-Backward
 
             animator.SetIKPosition(AvatarIKGoal.RightHand, avatarPosition + rightHandLocalOffset);
 
             // Fix rotation so the palm faces correctly
-            Quaternion rightHandRotationFix = vrRightHandTarget.rotation * Quaternion.Euler(0, 180, 180);
+            Quaternion rightHandRotationFix = vrRightHandTarget.rotation * Quaternion.Euler(0, 180, 0);
             animator.SetIKRotation(AvatarIKGoal.RightHand, rightHandRotationFix);
         }
 
@@ -63,3 +63,8 @@ void OnAnimatorIK(int layerIndex)
 
 
 }
+
+
+
+
+
